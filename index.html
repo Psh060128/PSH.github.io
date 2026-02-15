@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>好喜欢小琪OvO！</title>
+    <!-- 标签栏爱心图标 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>❤️</text></svg>" type="image/svg+xml">
     <style>
         * {
@@ -82,9 +83,24 @@
     <!-- 核心文字 -->
     <div class="main-text">好喜欢小琪OvO！</div>
 
+    <!-- 点击音效（内嵌，无需额外文件） -->
+    <audio id="clickSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT" type="audio/wav">
+    
+
     <script>
-        // 监听屏幕点击事件，触发爱心特效
+        // 获取音效元素
+        const clickSound = document.getElementById('clickSound');
+
+        // 监听屏幕点击事件，触发爱心特效+音效
         document.addEventListener('click', function(e) {
+            // 播放点击音效：每次点击重置到开头，避免多次点击卡顿
+            clickSound.currentTime = 0;
+            clickSound.play().catch(err => {
+                // 兼容浏览器音频限制，不报错影响页面
+                console.log('音频播放需用户交互解锁，第二次点击即可正常出声');
+            });
+
             // 每次点击生成3个爱心，效果更饱满
             for(let i = 0; i < 3; i++) {
                 createHeart(e.clientX, e.clientY);
