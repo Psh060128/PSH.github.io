@@ -1,2 +1,123 @@
-<h1>我的小世界</h1>
-<p>好喜欢小琪OvO！</p>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>好喜欢小琪OvO！</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 全局页面设置 */
+        body {
+            width: 100vw;
+            height: 100vh;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+
+        /* 模糊爱心背景 */
+        .bg-heart {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 35vw;
+            color: #ff8fab;
+            opacity: 0.25;
+            filter: blur(18px);
+            z-index: 0;
+            user-select: none;
+        }
+
+        /* 主文字样式 */
+        .main-text {
+            position: relative;
+            z-index: 10;
+            font-size: clamp(2rem, 10vw, 6rem);
+            font-weight: 900;
+            color: #000000;
+            text-align: center;
+            line-height: 1.2;
+            user-select: none;
+        }
+
+        /* 点击弹出的爱心特效 */
+        .pop-heart {
+            position: fixed;
+            pointer-events: none;
+            animation: floatUp 1.6s ease-out forwards;
+            z-index: 5;
+            user-select: none;
+        }
+
+        /* 爱心上浮消失动画 */
+        @keyframes floatUp {
+            0% {
+                transform: translate(-50%, 0) scale(0.8);
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.9;
+            }
+            100% {
+                transform: translate(-50%, -120px) scale(1.2);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 模糊背景爱心 -->
+    <div class="bg-heart">❤️</div>
+    <!-- 核心文字 -->
+    <div class="main-text">好喜欢小琪OvO！</div>
+
+    <script>
+        // 监听屏幕点击事件，触发爱心特效
+        document.addEventListener('click', function(e) {
+            // 每次点击生成3个爱心，效果更饱满
+            for(let i = 0; i < 3; i++) {
+                createHeart(e.clientX, e.clientY);
+            }
+        });
+
+        // 生成爱心的核心函数
+        function createHeart(x, y) {
+            const heart = document.createElement('div');
+            heart.className = 'pop-heart';
+            heart.textContent = '❤️';
+            
+            // 随机爱心大小（12px-32px，大小错落更自然）
+            const size = Math.random() * 20 + 12;
+            heart.style.fontSize = `${size}px`;
+            
+            // 随机粉色系配色，不单调
+            const pinkColors = ['#ff8fab', '#ff5c8d', '#ff9ebb', '#ffb3c6', '#ff758f'];
+            heart.style.color = pinkColors[Math.floor(Math.random() * pinkColors.length)];
+            
+            // 随机偏移，让爱心分散开，不堆在一起
+            const offsetX = (Math.random() - 0.5) * 60;
+            const offsetY = (Math.random() - 0.5) * 30;
+            heart.style.left = `${x + offsetX}px`;
+            heart.style.top = `${y + offsetY}px`;
+            
+            // 添加到页面
+            document.body.appendChild(heart);
+            
+            // 动画结束后自动移除，避免占用内存
+            setTimeout(() => {
+                heart.remove();
+            }, 1600);
+        }
+    </script>
+</body>
+</html>
