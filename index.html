@@ -1,125 +1,777 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>好喜欢小琪OvO！</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>❤️</text></svg>" type="image/svg+xml">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            width: 100vw;
-            height: 100vh;
-            background-color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            position: relative;
-            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-        }
-        .bg-heart {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 35vw;
-            color: #ff8fab;
-            opacity: 0.25;
-            filter: blur(18px);
-            z-index: 0;
-            user-select: none;
-        }
-        .main-text {
-            position: relative;
-            z-index: 10;
-            font-size: clamp(2rem, 10vw, 6rem);
-            font-weight: 900;
-            color: #000000;
-            text-align: center;
-            line-height: 1.2;
-            user-select: none;
-        }
-        .pop-heart {
-            position: fixed;
-            pointer-events: none;
-            animation: floatUp 1.6s ease-out forwards;
-            z-index: 5;
-            user-select: none;
-        }
-        @keyframes floatUp {
-            0% {
-                transform: translate(-50%, 0) scale(0.8);
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.9;
-            }
-            100% {
-                transform: translate(-50%, -120px) scale(1.2);
-                opacity: 0;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Animal Sort · 动物分类小游戏</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: "Baloo 2", "Comic Sans MS", "Chalkboard SE", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    background: radial-gradient(circle at 18% 8%, #fff8ec 0%, #ffe8d1 45%, #d8f0e4 100%);
+    overflow: hidden;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+  }
+
+  #game {
+    position: relative;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    padding: 10px 12px 12px;
+    gap: 8px;
+  }
+
+  /* ---------- 顶栏 ---------- */
+  .topbar { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+  .title {
+    font-size: clamp(15px, 2.4vw, 24px); font-weight: 900; color: #6b4b2a;
+    letter-spacing: .5px; text-shadow: 0 2px 0 #fff, 0 0 10px rgba(255,255,255,.8);
+  }
+  .progress {
+    margin-left: auto; background: #fff; border-radius: 999px; padding: 5px 16px;
+    font-weight: 900; color: #4f8f5a; box-shadow: 0 3px 0 #e2d8c9;
+    font-size: clamp(12px, 1.7vw, 17px);
+  }
+  #reset {
+    border: none; background: #ffb347; color: #fff; font-weight: 900;
+    padding: 8px 16px; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 4px 0 #e08e28; font-size: clamp(12px, 1.5vw, 15px);
+    font-family: inherit; transition: transform .08s;
+  }
+  #reset:active { transform: translateY(3px); box-shadow: 0 1px 0 #e08e28; }
+
+  /* ---------- 分类区 ---------- */
+  .board { flex: 1 1 auto; display: flex; gap: 12px; min-height: 0; }
+
+  .bin {
+    position: relative; flex: 1; border-radius: 26px; overflow: hidden;
+    border: 4px solid #fff;
+    box-shadow: 0 10px 24px rgba(120, 90, 60, .16), inset 0 0 0 3px rgba(255,255,255,.55);
+    transition: transform .16s ease, box-shadow .16s ease;
+  }
+  .bin[data-type="farm"] { background: #dcf5d3; }
+  .bin[data-type="wild"] { background: #dde9d5; }
+  .bin.hot {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 7px rgba(255,255,255,.95), 0 14px 28px rgba(120,90,60,.28);
+  }
+  .bin.wrong { animation: binShake .4s ease; }
+  @keyframes binShake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-7px) rotate(-1deg); }
+    75% { transform: translateX(7px) rotate(1deg); }
+  }
+
+  .bin-bg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+  .bin-content {
+    position: relative; z-index: 2; height: 100%;
+    display: flex; flex-direction: column; padding: 10px 12px;
+  }
+  .bin-title {
+    align-self: center;
+    background: rgba(255,255,255,.94);
+    color: #5a4a3a; font-weight: 900;
+    font-size: clamp(12px, 1.9vw, 19px);
+    padding: 4px 18px; border-radius: 999px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.09);
+    letter-spacing: .6px; white-space: nowrap;
+  }
+  .slots {
+    flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start;
+    justify-content: center; gap: 6px; padding-top: 10px; overflow: hidden;
+  }
+  .chip {
+    width: clamp(42px, 8.5vw, 60px);
+    display: flex; flex-direction: column; align-items: center;
+    background: rgba(255,255,255,.88);
+    border-radius: 14px; padding: 3px;
+    box-shadow: 0 3px 0 rgba(0,0,0,.08);
+    transform: scale(.3); opacity: 0;
+    transition: transform .3s cubic-bezier(.34,1.6,.64,1), opacity .3s;
+  }
+  .chip.pop { transform: scale(1); opacity: 1; }
+  .chip svg { width: 100%; height: auto; display: block; }
+  .chip span {
+    font-size: clamp(8px, 1.1vw, 11px); font-weight: 900;
+    color: #6b5a45; line-height: 1.25;
+  }
+
+  /* ---------- 动物托盘 ---------- */
+  .tray-space { flex: 0 0 34%; min-height: 130px; }
+
+  .stage {
+    position: absolute; inset: 0;
+    pointer-events: none; z-index: 50;
+  }
+
+  .animal {
+    position: absolute;
+    width: 96px;
+    cursor: grab; pointer-events: auto;
+    transition: left .32s cubic-bezier(.34,1.4,.64,1), top .32s cubic-bezier(.34,1.4,.64,1);
+    will-change: left, top;
+  }
+  .animal .inner {
+    display: block; width: 100%;
+    transform-origin: 50% 88%;
+    filter: drop-shadow(0 4px 5px rgba(120,90,60,.20));
+    transition: transform .18s ease;
+  }
+  .animal svg { width: 100%; height: auto; display: block; }
+  .animal .label {
+    text-align: center; font-weight: 900; font-size: 14px; color: #6b5a45;
+    margin-top: -2px;
+    text-shadow: 0 1px 0 #fff, 0 0 7px #fff, 0 0 3px #fff;
+  }
+  .animal:hover:not(.dragging) .inner { transform: translateY(-4px) rotate(-2deg); }
+
+  .animal.dragging { z-index: 999; transition: none; cursor: grabbing; }
+  .animal.dragging .inner {
+    animation: wobble .42s ease-in-out infinite;
+    filter: drop-shadow(0 14px 14px rgba(90,70,50,.30));
+  }
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-9deg); }
+    50%      { transform: rotate(9deg); }
+  }
+
+  .animal.wrong .inner { animation: shakeX .42s ease; }
+  @keyframes shakeX {
+    0%,100% { transform: translateX(0) rotate(0); }
+    25%     { transform: translateX(-9px) rotate(-7deg); }
+    75%     { transform: translateX(9px) rotate(7deg); }
+  }
+
+  /* ---------- 屏幕氛围灯 ---------- */
+  #glow {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 150;
+    opacity: 0;
+  }
+  #glow.green {
+    box-shadow:
+      inset 0 0 0 7px  rgba(140, 255, 170, .98),
+      inset 0 0 55px 16px rgba(70, 235, 115, .80),
+      inset 0 0 170px 70px rgba(40, 210, 90, .40);
+  }
+  #glow.red {
+    box-shadow:
+      inset 0 0 0 7px  rgba(255, 150, 150, .98),
+      inset 0 0 55px 16px rgba(255, 85, 85, .80),
+      inset 0 0 170px 70px rgba(255, 45, 45, .42);
+  }
+  #glow.flash { animation: glowPulse .78s ease-out forwards; }
+  @keyframes glowPulse {
+    0%   { opacity: 0; }
+    12%  { opacity: 1; }
+    36%  { opacity: .45; }
+    58%  { opacity: .95; }
+    100% { opacity: 0; }
+  }
+
+  /* ---------- 通关弹窗 ---------- */
+  .win {
+    position: fixed; inset: 0; z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(90, 70, 50, .35);
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  .win.show { opacity: 1; pointer-events: auto; }
+  .win-card {
+    background: #fffdf8; border-radius: 28px; padding: 34px 46px;
+    text-align: center; box-shadow: 0 20px 50px rgba(90,70,50,.3);
+    transform: scale(.7); transition: transform .4s cubic-bezier(.34,1.6,.64,1);
+    border: 5px solid #ffe0a8;
+  }
+  .win.show .win-card { transform: scale(1); }
+  .win-card h2 { margin: 0 0 6px; font-size: 28px; color: #6b4b2a; }
+  .win-card p { margin: 0 0 18px; color: #9b8a76; font-weight: 700; }
+  .win-card button {
+    border: none; background: #7fce8b; color: #fff; font-weight: 900;
+    padding: 12px 32px; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 5px 0 #5bab68; font-size: 17px; font-family: inherit;
+  }
+  .win-card button:active { transform: translateY(4px); box-shadow: 0 1px 0 #5bab68; }
+
+  @media (max-width: 680px) {
+    .animal { width: 72px; }
+    .animal .label { font-size: 11px; }
+    .tray-space { flex-basis: 36%; }
+  }
+</style>
 </head>
 <body>
-    <div class="bg-heart">❤️</div>
-    <div class="main-text">好喜欢小琪OvO！</div>
 
-    <script>
-        let audioContext;
-        function initAudioContext() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            }
-        }
+<div id="game">
+  <div class="topbar">
+    <div class="title">🐾 Animal Sort · 动物分类</div>
+    <div class="progress"><span id="done">0</span> / <span id="total">8</span></div>
+    <button id="reset">↻ Restart</button>
+  </div>
 
-        // 迷你弹跳啵啵音
-        function playClickSound() {
-            initAudioContext();
-            const osc = audioContext.createOscillator();
-            const gain = audioContext.createGain();
-            osc.connect(gain);
-            gain.connect(audioContext.destination);
+  <div class="board" id="board">
+    <!-- 农场 -->
+    <div class="bin" data-type="farm">
+      <svg class="bin-bg" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="farmSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#bfe7ff"/>
+            <stop offset="100%" stop-color="#eafaff"/>
+          </linearGradient>
+        </defs>
+        <rect width="400" height="240" fill="url(#farmSky)"/>
+        <circle cx="336" cy="48" r="26" fill="#ffe066"/>
+        <ellipse cx="80" cy="222" rx="190" ry="72" fill="#a8e6a3"/>
+        <ellipse cx="340" cy="234" rx="175" ry="66" fill="#8fdc8a"/>
+        <g>
+          <rect x="142" y="128" width="112" height="84" fill="#e05b4a"/>
+          <path d="M130 130 L198 78 L266 130 Z" fill="#c94b3c"/>
+          <rect x="182" y="164" width="34" height="48" fill="#fff3e0"/>
+          <path d="M182 164 L216 212 M216 164 L182 212" stroke="#e6d2b4" stroke-width="2.5"/>
+          <rect x="156" y="148" width="20" height="20" fill="#fff3e0"/>
+          <rect x="220" y="148" width="20" height="20" fill="#fff3e0"/>
+        </g>
+        <g fill="#f3e2c7">
+          <rect x="16" y="182" width="10" height="46" rx="4"/>
+          <rect x="50" y="182" width="10" height="46" rx="4"/>
+          <rect x="84" y="182" width="10" height="46" rx="4"/>
+          <rect x="8" y="192" width="94" height="9" rx="4"/>
+          <rect x="8" y="212" width="94" height="9" rx="4"/>
+        </g>
+        <rect width="400" height="240" fill="#ffffff" opacity="0.32"/>
+      </svg>
+      <div class="bin-content">
+        <div class="bin-title">🚜 FARM ANIMALS</div>
+        <div class="slots" data-slot="farm"></div>
+      </div>
+    </div>
 
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(400, audioContext.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(900, audioContext.currentTime + 0.06);
-            osc.frequency.exponentialRampToValueAtTime(300, audioContext.currentTime + 0.18);
+    <!-- 野生动物 -->
+    <div class="bin" data-type="wild">
+      <svg class="bin-bg" viewBox="0 0 400 240" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <linearGradient id="wildSky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffd9a0"/>
+            <stop offset="55%" stop-color="#ffc9b5"/>
+            <stop offset="100%" stop-color="#e6f2d9"/>
+          </linearGradient>
+        </defs>
+        <rect width="400" height="240" fill="url(#wildSky)"/>
+        <circle cx="78" cy="58" r="27" fill="#ffb347"/>
+        <path d="M-20 200 L100 88 L220 200 Z" fill="#a9c3ad"/>
+        <path d="M130 200 L255 66 L380 200 Z" fill="#8fb096"/>
+        <path d="M270 200 L368 104 L470 200 Z" fill="#a9c3ad"/>
+        <g fill="#4f9e6a">
+          <path d="M332 96 L362 158 L302 158 Z"/>
+          <path d="M332 128 L366 190 L298 190 Z"/>
+        </g>
+        <rect x="327" y="184" width="11" height="30" rx="4" fill="#8a5a2b"/>
+        <g fill="#5aab74">
+          <path d="M36 138 L60 184 L12 184 Z"/>
+        </g>
+        <rect x="31" y="180" width="9" height="26" rx="3" fill="#8a5a2b"/>
+        <ellipse cx="200" cy="252" rx="260" ry="60" fill="#bfe3b3"/>
+        <rect width="400" height="240" fill="#ffffff" opacity="0.30"/>
+      </svg>
+      <div class="bin-content">
+        <div class="bin-title">🌲 WILD ANIMALS</div>
+        <div class="slots" data-slot="wild"></div>
+      </div>
+    </div>
+  </div>
 
-            gain.gain.setValueAtTime(0.4, audioContext.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.18);
+  <div class="tray-space"></div>
+  <div class="stage" id="stage"></div>
+</div>
 
-            osc.start();
-            osc.stop(audioContext.currentTime + 0.18);
-        }
+<!-- 屏幕氛围灯 -->
+<div id="glow"></div>
 
-        document.addEventListener('click', function(e) {
-            playClickSound();
-            for(let i = 0; i < 3; i++) {
-                createHeart(e.clientX, e.clientY);
-            }
-        });
+<!-- 通关 -->
+<div class="win" id="win">
+  <div class="win-card">
+    <h2>🎉 Great Job!</h2>
+    <p>你把所有动物都送回家啦！</p>
+    <button id="playAgain">Play Again</button>
+  </div>
+</div>
 
-        function createHeart(x, y) {
-            const heart = document.createElement('div');
-            heart.className = 'pop-heart';
-            heart.textContent = '❤️';
-            const size = Math.random() * 20 + 12;
-            heart.style.fontSize = `${size}px`;
-            const pinkColors = ['#ff8fab', '#ff5c8d', '#ff9ebb', '#ffb3c6', '#ff758f'];
-            heart.style.color = pinkColors[Math.floor(Math.random() * pinkColors.length)];
-            const offsetX = (Math.random() - 0.5) * 60;
-            const offsetY = (Math.random() - 0.5) * 30;
-            heart.style.left = `${x + offsetX}px`;
-            heart.style.top = `${y + offsetY}px`;
-            document.body.appendChild(heart);
-            setTimeout(() => heart.remove(), 1600);
-        }
-    </script>
+<script>
+/* =========================================================
+   1. 动物数据（内联 SVG，白色描边 = 贴纸效果）
+   ========================================================= */
+const ANIMALS = [
+  {
+    id: 'cow', name: 'Cow', type: 'farm',
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+        <ellipse cx="30" cy="20" rx="6" ry="9" fill="#e6bf94" transform="rotate(-18 30 20)"/>
+        <ellipse cx="70" cy="20" rx="6" ry="9" fill="#e6bf94" transform="rotate(18 70 20)"/>
+        <ellipse cx="20" cy="44" rx="12" ry="8" fill="#d9a679" transform="rotate(-25 20 44)"/>
+        <ellipse cx="80" cy="44" rx="12" ry="8" fill="#d9a679" transform="rotate(25 80 44)"/>
+        <ellipse cx="50" cy="54" rx="30" ry="28" fill="#fdf6ec"/>
+        <ellipse cx="34" cy="38" rx="11" ry="9" fill="#8a7a6b" stroke="none"/>
+        <ellipse cx="68" cy="76" rx="9" ry="7" fill="#8a7a6b" stroke="none"/>
+        <circle cx="38" cy="54" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="62" cy="54" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="39.7" cy="52.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <circle cx="63.7" cy="52.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <ellipse cx="50" cy="72" rx="17" ry="12" fill="#ffc2c2"/>
+        <ellipse cx="44" cy="72" rx="2.6" ry="3.6" fill="#e08b8b" stroke="none"/>
+        <ellipse cx="56" cy="72" rx="2.6" ry="3.6" fill="#e08b8b" stroke="none"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: 'pig', name: 'Pig', type: 'farm',
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M24 36 L16 12 L42 26 Z" fill="#f7a7bd"/>
+        <path d="M76 36 L84 12 L58 26 Z" fill="#f7a7bd"/>
+        <ellipse cx="50" cy="56" rx="31" ry="28" fill="#ffb3c8"/>
+        <circle cx="38" cy="50" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="62" cy="50" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="39.7" cy="48.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <circle cx="63.7" cy="48.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <ellipse cx="50" cy="70" rx="16" ry="12" fill="#ff8fae"/>
+        <ellipse cx="43" cy="70" rx="3.2" ry="4.8" fill="#d9678a" stroke="none"/>
+        <ellipse cx="57" cy="70" rx="3.2" ry="4.8" fill="#d9678a" stroke="none"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: 'chicken', name: 'Chicken', type: 'farm',
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+        <circle cx="40" cy="20" r="8" fill="#ef4b4b"/>
+        <circle cx="53" cy="15" r="9" fill="#ef4b4b"/>
+        <circle cx="65" cy="22" r="7" fill="#ef4b4b"/>
+        <circle cx="52" cy="50" r="27" fill="#fff3c4"/>
+        <path d="M64 68 q9 12 -2 14 q-10 -2 -8 -14 Z" fill="#ef4b4b"/>
+        <path d="M76 46 L96 54 L76 62 Z" fill="#ffa726"/>
+        <circle cx="63" cy="44" r="4.8" fill="#3b2f2a" stroke="none"/>
+        <circle cx="64.7" cy="42.3" r="1.8" fill="#ffffff" stroke="none"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: 'sheep', name: 'Sheep', type: 'farm',
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+        <circle cx="28" cy="40" r="17" fill="#fdfaf5"/>
+        <circle cx="50" cy="26" r="18" fill="#fdfaf5"/>
+        <circle cx="72" cy="40" r="17" fill="#fdfaf5"/>
+        <circle cx="22" cy="62" r="14" fill="#fdfaf5"/>
+        <circle cx="78" cy="62" r="14" fill="#fdfaf5"/>
+        <ellipse cx="22" cy="54" rx="11" ry="7" fill="#5c5147" transform="rotate(-25 22 54)"/>
+        <ellipse cx="78" cy="54" rx="11" ry="7" fill="#5c5147" transform="rotate(25 78 54)"/>
+        <ellipse cx="50" cy="58" rx="22" ry="24" fill="#5c5147"/>
+        <circle cx="42" cy="54" r="5" fill="#ffffff" stroke="none"/>
+        <circle cx="58" cy="54" r="5" fill="#ffffff" stroke="none"/>
+        <circle cx="42.8" cy="54.6" r="2.3" fill="#2b2420" stroke="none"/>
+        <circle cx="58.8" cy="54.6" r="2.3" fill="#2b2420" stroke="none"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: 'lion', name: 'Lion', type: 'wild',
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+        <circle cx="50" cy="18" r="15" fill="#e8a33d"/>
+        <circle cx="76" cy="30" r="15" fill="#e8a33d"/>
+        <circle cx="86" cy="56" r="15" fill="#e8a33d"/>
+        <circle cx="74" cy="82" r="15" fill="#e8a33d"/>
+        <circle cx="50" cy="90" r="15" fill="#e8a33d"/>
+        <circle cx="26" cy="82" r="15" fill="#e8a33d"/>
+        <circle cx="14" cy="56" r="15" fill="#e8a33d"/>
+        <circle cx="24" cy="30" r="15" fill="#e8a33d"/>
+        <ellipse cx="50" cy="54" rx="27" ry="26" fill="#ffd08a"/>
+        <circle cx="40" cy="48" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="60" cy="48" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="41.7" cy="46.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <circle cx="61.7" cy="46.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <path d="M43 60 L57 60 L50 68 Z" fill="#c9704a" stroke="none"/>
+        <path d="M50 68 v5" stroke="#a2563a" stroke-width="2.6" fill="none"/>
+        <path d="M50 73 q-6 6 -11 1 M50 73 q6 6 11 1" stroke="#a2563a" stroke-width="2.6" fill="none"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: 'elephant', name: 'Elephant', type: 'wild',
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+        <ellipse cx="19" cy="48" rx="18" ry="23" fill="#9fb3c8"/>
+        <ellipse cx="81" cy="48" rx="18" ry="23" fill="#9fb3c8"/>
+        <ellipse cx="50" cy="46" rx="27" ry="25" fill="#b8c9da"/>
+        <path d="M50 56 q-2 22 8 28 q9 5 11 -5" fill="none" stroke="#ffffff" stroke-width="17" stroke-linecap="round"/>
+        <path d="M50 56 q-2 22 8 28 q9 5 11 -5" fill="none" stroke="#b8c9da" stroke-width="9" stroke-linecap="round"/>
+        <circle cx="38" cy="44" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="62" cy="44" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="39.7" cy="42.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <circle cx="63.7" cy="42.3" r="1.7" fill="#ffffff" stroke="none"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: 'tiger', name: 'Tiger', type: 'wild',
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+        <circle cx="24" cy="30" r="12" fill="#f5a623"/>
+        <circle cx="76" cy="30" r="12" fill="#f5a623"/>
+        <circle cx="24" cy="30" r="5.5" fill="#e0705a" stroke="none"/>
+        <circle cx="76" cy="30" r="5.5" fill="#e0705a" stroke="none"/>
+        <ellipse cx="50" cy="54" rx="31" ry="29" fill="#f5a623"/>
+        <path d="M50 27 v11" stroke="#3b2f2a" stroke-width="4" fill="none"/>
+        <path d="M38 29 l-3 10" stroke="#3b2f2a" stroke-width="4" fill="none"/>
+        <path d="M62 29 l3 10" stroke="#3b2f2a" stroke-width="4" fill="none"/>
+        <path d="M23 46 h9" stroke="#3b2f2a" stroke-width="4" fill="none"/>
+        <path d="M77 46 h-9" stroke="#3b2f2a" stroke-width="4" fill="none"/>
+        <circle cx="38" cy="50" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="62" cy="50" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="39.7" cy="48.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <circle cx="63.7" cy="48.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <ellipse cx="50" cy="69" rx="18" ry="13" fill="#fff5e8" stroke="none"/>
+        <path d="M44 63 L56 63 L50 69 Z" fill="#e0705a" stroke="none"/>
+        <path d="M50 69 v4" stroke="#a2563a" stroke-width="2.4" fill="none"/>
+        <path d="M50 73 q-6 5 -10 1 M50 73 q6 5 10 1" stroke="#a2563a" stroke-width="2.4" fill="none"/>
+      </g>
+    </svg>`
+  },
+  {
+    id: 'giraffe', name: 'Giraffe', type: 'wild',
+    svg: `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <g stroke="#ffffff" stroke-width="5" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M36 30 V14" stroke="#8a5a2b" stroke-width="7" fill="none"/>
+        <circle cx="36" cy="12" r="7" fill="#8a5a2b"/>
+        <path d="M64 30 V14" stroke="#8a5a2b" stroke-width="7" fill="none"/>
+        <circle cx="64" cy="12" r="7" fill="#8a5a2b"/>
+        <ellipse cx="18" cy="40" rx="11" ry="7" fill="#e0a95a" transform="rotate(-30 18 40)"/>
+        <ellipse cx="82" cy="40" rx="11" ry="7" fill="#e0a95a" transform="rotate(30 82 40)"/>
+        <ellipse cx="50" cy="52" rx="26" ry="30" fill="#f7d774"/>
+        <ellipse cx="30" cy="40" rx="7" ry="9" fill="#c98a3e" stroke="none"/>
+        <ellipse cx="69" cy="48" rx="7" ry="9" fill="#c98a3e" stroke="none"/>
+        <circle cx="40" cy="46" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="60" cy="46" r="4.6" fill="#3b2f2a" stroke="none"/>
+        <circle cx="41.7" cy="44.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <circle cx="61.7" cy="44.3" r="1.7" fill="#ffffff" stroke="none"/>
+        <ellipse cx="50" cy="70" rx="16" ry="12" fill="#f0c05a"/>
+        <ellipse cx="44" cy="70" rx="2.6" ry="3.6" fill="#b8863c" stroke="none"/>
+        <ellipse cx="56" cy="70" rx="2.6" ry="3.6" fill="#b8863c" stroke="none"/>
+      </g>
+    </svg>`
+  }
+];
+
+/* =========================================================
+   2. 英语发音（Web Speech API）
+   ========================================================= */
+let enVoice = null;
+
+function pickVoice() {
+  if (!('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return;
+
+  // 优先挑一个美式英语的自然女声
+  const prefer = [/samantha/i, /zira/i, /google us english/i, /aria/i, /jenny/i, /female/i];
+  enVoice =
+    voices.find(v => /^en[-_]US/i.test(v.lang) && prefer.some(p => p.test(v.name))) ||
+    voices.find(v => /^en[-_]US/i.test(v.lang)) ||
+    voices.find(v => /^en[-_]GB/i.test(v.lang)) ||
+    voices.find(v => /^en/i.test(v.lang)) ||
+    null;
+}
+
+if ('speechSynthesis' in window) {
+  pickVoice();
+  window.speechSynthesis.onvoiceschanged = pickVoice;
+}
+
+/* 朗读动物英文名 */
+function speakName(name) {
+  if (!('speechSynthesis' in window)) return;
+  const synth = window.speechSynthesis;
+  synth.cancel();                       // 打断上一个，避免排队
+
+  const u = new SpeechSynthesisUtterance(name);
+  u.lang  = 'en-US';
+  u.rate  = 0.82;                       // 放慢，方便学生听清
+  u.pitch = 1.08;
+  u.volume = 1;
+  if (!enVoice) pickVoice();
+  if (enVoice) u.voice = enVoice;
+
+  synth.speak(u);
+}
+
+/* =========================================================
+   3. 判定提示音（Web Audio，对 / 错）
+   ========================================================= */
+let audioCtx = null;
+
+function ac() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playDing(good) {
+  const ctx = ac();
+  if (!ctx) return;
+  const t = ctx.currentTime + 0.01;
+  const notes = good ? [659.25, 880, 1174.66] : [330, 233];
+  notes.forEach((f, i) => {
+    const o = ctx.createOscillator();
+    o.type = 'sine';
+    o.frequency.value = f;
+    const g = ctx.createGain();
+    const st = t + i * (good ? 0.075 : 0.13);
+    g.gain.setValueAtTime(0.0001, st);
+    g.gain.linearRampToValueAtTime(good ? 0.12 : 0.11, st + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, st + (good ? 0.34 : 0.24));
+    o.connect(g); g.connect(ctx.destination);
+    o.start(st); o.stop(st + 0.45);
+  });
+}
+
+/* =========================================================
+   4. 屏幕氛围灯
+   ========================================================= */
+const glowEl = document.getElementById('glow');
+let glowTimer = null;
+
+function flashScreen(color) {
+  glowEl.className = '';
+  void glowEl.offsetWidth;          // 强制重排，重启动画
+  glowEl.classList.add(color, 'flash');
+  clearTimeout(glowTimer);
+  glowTimer = setTimeout(() => { glowEl.className = ''; }, 820);
+}
+
+/* =========================================================
+   5. 游戏逻辑
+   ========================================================= */
+const game    = document.getElementById('game');
+const board   = document.getElementById('board');
+const stage   = document.getElementById('stage');
+const doneEl  = document.getElementById('done');
+const totalEl = document.getElementById('total');
+const winEl   = document.getElementById('win');
+
+let placed = 0;
+let drag = null;
+
+totalEl.textContent = ANIMALS.length;
+
+/* ---- 创建动物 ---- */
+function buildGame() {
+  stage.innerHTML = '';
+  document.querySelectorAll('.slots').forEach(s => s.innerHTML = '');
+  winEl.classList.remove('show');
+  glowEl.className = '';
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+  placed = 0;
+  doneEl.textContent = '0';
+  drag = null;
+
+  const list = [...ANIMALS].sort(() => Math.random() - 0.5);
+
+  list.forEach(a => {
+    const el = document.createElement('div');
+    el.className = 'animal';
+    el.dataset.type = a.type;
+    el.dataset.id = a.id;
+    el.innerHTML = `<div class="inner">${a.svg}</div><div class="label">${a.name}</div>`;
+    el._animal = a;
+    el.addEventListener('pointerdown', onPointerDown);
+    stage.appendChild(el);
+  });
+
+  layout();
+}
+
+/* ---- 布局：把动物排在下方托盘区 ---- */
+function layout() {
+  const animals = [...stage.querySelectorAll('.animal:not(.placed)')];
+  if (!animals.length) return;
+
+  const gr = game.getBoundingClientRect();
+  const br = board.getBoundingClientRect();
+  const trayTop  = br.bottom - gr.top + 8;
+  const trayH    = Math.max(90, gr.height - trayTop - 8);
+  const trayW    = gr.width - 20;
+  const trayLeft = 10;
+
+  const n    = animals.length;
+  const cols = Math.min(n, 4);
+  const rows = Math.ceil(n / cols);
+  const cellW = trayW / cols;
+  const cellH = trayH / rows;
+
+  const cw = animals[0].offsetWidth  || 96;
+  const ch = animals[0].offsetHeight || 118;
+
+  animals.forEach((el, i) => {
+    const r = Math.floor(i / cols);
+    const c = i % cols;
+    const inRow   = (r === rows - 1) ? (n - r * cols) : cols;
+    const rowW    = inRow * cellW;
+    const rowLeft = trayLeft + (trayW - rowW) / 2;
+
+    const x = rowLeft + c * cellW + (cellW - cw) / 2;
+    const y = trayTop  + r * cellH + (cellH - ch) / 2;
+
+    el._home = { x, y };
+    if (!el.classList.contains('dragging')) {
+      el.style.left = x + 'px';
+      el.style.top  = y + 'px';
+    }
+  });
+}
+
+/* ---- 命中检测 ---- */
+function hitBin(cx, cy) {
+  let found = null;
+  document.querySelectorAll('.bin').forEach(b => {
+    const r = b.getBoundingClientRect();
+    if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) found = b;
+  });
+  return found;
+}
+
+/* ---- 按下：朗读英文名 + 开始拖拽 ---- */
+function onPointerDown(e) {
+  const el = e.currentTarget;
+  if (el.classList.contains('placed')) return;
+  e.preventDefault();
+
+  ac(); // 解锁音频上下文
+
+  const gr = game.getBoundingClientRect();
+  const r  = el.getBoundingClientRect();
+
+  drag = { el, offX: e.clientX - r.left, offY: e.clientY - r.top };
+
+  el.setPointerCapture(e.pointerId);
+  el.classList.add('dragging');
+
+  speakName(el._animal.name);        // ★ 英语发音
+
+  window.addEventListener('pointermove', onPointerMove);
+  window.addEventListener('pointerup', onPointerUp);
+  window.addEventListener('pointercancel', onPointerUp);
+}
+
+/* ---- 拖动中 ---- */
+function onPointerMove(e) {
+  if (!drag) return;
+  const gr = game.getBoundingClientRect();
+  drag.el.style.left = (e.clientX - gr.left - drag.offX) + 'px';
+  drag.el.style.top  = (e.clientY - gr.top  - drag.offY) + 'px';
+
+  const hit = hitBin(e.clientX, e.clientY);
+  document.querySelectorAll('.bin').forEach(b => b.classList.toggle('hot', b === hit));
+}
+
+/* ---- 松开 ---- */
+function onPointerUp(e) {
+  if (!drag) return;
+
+  window.removeEventListener('pointermove', onPointerMove);
+  window.removeEventListener('pointerup', onPointerUp);
+  window.removeEventListener('pointercancel', onPointerUp);
+  document.querySelectorAll('.bin').forEach(b => b.classList.remove('hot'));
+
+  const el   = drag.el;
+  const home = el._home || { x: 0, y: 0 };
+  const bin  = hitBin(e.clientX, e.clientY);
+
+  el.classList.remove('dragging');
+  drag = null;
+
+  /* ✅ 放对了 */
+  if (bin && bin.dataset.type === el.dataset.type) {
+    el.classList.add('placed');
+    el.style.pointerEvents = 'none';
+    el.style.transition = 'transform .22s ease, opacity .22s ease';
+    el.style.transformOrigin = '50% 50%';
+    el.style.transform = 'scale(.25) rotate(12deg)';
+    el.style.opacity = '0';
+
+    flashScreen('green');       // 绿色氛围灯
+    playDing(true);
+    speakName(el._animal.name); // 再读一遍，加深记忆
+
+    setTimeout(() => {
+      const a = el._animal;
+      el.remove();
+      addChip(bin, a);
+      layout();
+    }, 190);
+
+    placed++;
+    doneEl.textContent = placed;
+    if (placed === ANIMALS.length) setTimeout(showWin, 700);
+    return;
+  }
+
+  /* ❌ 放错了 / 放回原处 */
+  if (bin) {
+    flashScreen('red');         // 红色氛围灯
+    playDing(false);
+    el.classList.add('wrong');
+    bin.classList.add('wrong');
+    setTimeout(() => {
+      el.classList.remove('wrong');
+      bin.classList.remove('wrong');
+    }, 430);
+  }
+
+  el.style.transition = 'left .36s cubic-bezier(.34,1.5,.64,1), top .36s cubic-bezier(.34,1.5,.64,1)';
+  el.style.left = home.x + 'px';
+  el.style.top  = home.y + 'px';
+}
+
+/* ---- 放入分类格 ---- */
+function addChip(bin, animal) {
+  const slots = bin.querySelector('.slots');
+  const chip = document.createElement('div');
+  chip.className = 'chip';
+  chip.innerHTML = animal.svg + `<span>${animal.name}</span>`;
+  slots.appendChild(chip);
+  requestAnimationFrame(() => chip.classList.add('pop'));
+}
+
+/* ---- 通关 ---- */
+function showWin() {
+  winEl.classList.add('show');
+  flashScreen('green');
+  playDing(true);
+  speakName('Great job');
+}
+
+/* ---- 重开 & 自适应 ---- */
+document.getElementById('reset').addEventListener('click', buildGame);
+document.getElementById('playAgain').addEventListener('click', buildGame);
+
+let rzTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(rzTimer);
+  rzTimer = setTimeout(layout, 120);
+});
+
+/* 启动 */
+buildGame();
+</script>
 </body>
 </html>
